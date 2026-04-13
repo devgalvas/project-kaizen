@@ -1,0 +1,11 @@
+services:
+  db:
+    image: postgres:15.3
+    volumes:
+      - ./volumes/postgres/data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: kaizen
+      POSTGRES_USER: kaizen
+      POSTGRES_DB: kaizen
+    ports:
+      - "5433:5432"
