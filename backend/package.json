@@ -17,5 +17,8 @@
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
+  },
+  "scripts": {
+    "dev": "tsx server.ts"
   }
 }
