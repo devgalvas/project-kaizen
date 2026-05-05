@@ -6,8 +6,8 @@ const repository = new TaskRepository();
 export class TaskController {
 
     async create(request: FastifyRequest, reply: FastifyReply) {
-        const { title, description, status, userId } = request.body as any;
-        const task = await repository.create({ title, description, status, userId });
+        const { title, description, xpReward, userId } = request.body as any;
+        const task = await repository.create({ title, description, xpReward, user: { connect: { id: userId } } });
         reply.status(201).send(task);
     }
 

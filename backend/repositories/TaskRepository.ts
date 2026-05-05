@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma";
+import { prisma } from "../lib/prisma.js";
 import { Prisma, type Task } from "../src/generated/prisma/client.js";
 
 export class TaskRepository {

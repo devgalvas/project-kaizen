@@ -1,9 +1,6 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -13,50 +10,17 @@ datasource db {
   provider = "postgresql"
 }
 
-// Enums nativos
-enum DifficultyEnum {
-  EASY
-  MEDIUM
-  HARD
-}
-
-enum AreaEnum {
-  INTELLECTUAL
-  PHYSICAL
-  SPIRITUAL
-}
-
-enum RarityEnum {
-  COMMON
-  RARE
-  EPIC
-  LEGENDARY
-}
-
-enum NotificationChannel {
-  WHATSAPP
-  EMAIL
-  SMS
-}
-
 // 1. User
 model User {
   id           String   @id @default(uuid())
-  username     String   @unique
   email        String   @unique
   passwordHash String
   createdAt    DateTime @default(now())
 
-  // Autorrelacionamentos N:N (Amigos)
-  friends  User[] @relation("UserFriends")
-  friendOf User[] @relation("UserFriends")
-
-  //Relacionamentos
+  // Relacionamentos
   avatar       Avatar?
-  inventory    Inventory?
   tasks        Task[]
-  skillTrees   SkillTree[]
-  notification Notification[]
+  notifications Notification[]
 }
 
 // 2. Avatar
@@ -64,112 +28,104 @@ model Avatar {
   id        String @id @default(uuid())
   level     Int    @default(1)
   currentXP Int    @default(0)
-  totalXP   Int    @default(0)
   coins     Int    @default(0)
 
-  //Relacionamentos
-  userId String @unique
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-// 3. Inventory
-model Inventory {
-  id       String @id @default(uuid())
-  capacity Int    @default(20)
-
+  // Relacionamentos
   userId String @unique
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // N:N implicito
-  items        Item[]
+  skillTrees   SkillTree[]
   achievements Achievement[]
 }
 
-// 4. Item
-model Item {
-  id          String     @id @default(uuid())
-  name        String
-  description String
-  rarity      RarityEnum
-  price       Int
-
-  //Relacionamentos N:N implicito
-  inventories Inventory[]
-}
-
-// 5. Achievement
-model Achievement {
-  id          String    @id @default(uuid())
-  name        String
-  description String
-  medal       String
-  xpReward    Int
-  unlockedAt  DateTime?
-  unlocked    Boolean   @default(false)
-
-  //Relacionamentos N:N implicito
-  inventories Inventory[]
-}
-
-// 6. Task
+// 3. Task (Interface base para ITask)
 model Task {
-  id          String         @id @default(uuid())
+  id          String   @id @default(uuid())
   title       String
   description String
   xpReward    Int
-  difficulty  DifficultyEnum
-  dueDate     DateTime?
-  isCompleted Boolean        @default(false)
 
-  // Atributos de logica pra habitos
-  streak        Int?      @default(0)
-  lastCheckedIn DateTime?
-  area          AreaEnum?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  // Heranca/Composicao com Mission
-  missionBase Mission? @relation("TaskBase")
-
-  // relacionamento para caso esta task seja uma sub-tarefa de uma Mission
-  missionId     String?
-  parentMission Mission? @relation("MissionTasks", fields: [missionId], references: [taskId])
+  // Tipos Especializados (Polimorfismo / Herança em tabelas)
+  habit       Habit?
+  daily       Daily?
+  mission     Mission?
 }
 
-// 7. Mission
-model Mission {
-  taskId String @id
-  task   Task   @relation("TaskBase", fields: [taskId], references: [id], onDelete: Cascade)
+// 4. Habit (Implementa ITask)
+model Habit {
+  id        String @id @default(uuid())
+  streak    Int    @default(0)
+  frequency String 
+  
+  taskId    String @unique
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
 
+// 5. Daily (Implementa ITask)
+model Daily {
+  id        String   @id @default(uuid())
+  dueDate   DateTime
+  isOverdue Boolean  @default(false)
+
+  taskId    String @unique
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+// 6. Mission (Adicionado para suportar os controllers existentes)
+model Mission {
+  id         String @id @default(uuid())
   coinReward Int
   isDaily    Boolean @default(false)
-
-  // Relacionamento 1:N com Task
-  subTasks Task[] @relation("MissionTasks")
+  
+  taskId    String @unique
+  task      Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
 }
 
-// 8. SkillTree
+// 7. SkillTree
 model SkillTree {
-  id            String   @id @default(uuid())
-  name          String
-  area          AreaEnum
-  unlockedNodes String[] @default([])
-  totalNodes    Int      @default(0)
+  id       String @id @default(uuid())
+  category String
+  nodes    String[] 
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  avatarId String
+  avatar   Avatar @relation(fields: [avatarId], references: [id], onDelete: Cascade)
 }
 
-// 9. Notification
-model Notification {
-  id      String              @id @default(uuid())
-  message String
-  type    String
-  channel NotificationChannel
-  sentAt  DateTime            @default(now())
-  sent    Boolean             @default(false)
+// 8. RewardStore
+model RewardStore {
+  id             String @id @default(uuid())
+  availableItems Item[]
+}
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+// 9. Item
+model Item {
+  id            String @id @default(uuid())
+  name          String
+  price         Int
+  rarity        String
+  
+  rewardStoreId String?
+  rewardStore   RewardStore? @relation(fields: [rewardStoreId], references: [id], onDelete: Cascade)
+}
+
+// 10. Achievement
+model Achievement {
+  id         String @id @default(uuid())
+  criteria   String
+  isUnlocked Boolean @default(false)
+
+  avatarId   String?
+  avatar     Avatar? @relation(fields: [avatarId], references: [id], onDelete: Cascade)
+}
+
+// 11. Notification (Substitui NotificationService para guardar estado)
+model Notification {
+  id      String @id @default(uuid())
+  message String
+
+  userId  String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

@@ -1,125 +1,76 @@
+---
+config:
+  theme: dark
+  look: neo
+  layout: dagre
+---
 classDiagram
-  class User {
-    -String id
-    -String username
-    -String email
-    -String passwordHash
-    -Date createdAt
-    -User[] friends
-    +create(username, email, password)$ User
-    +verifyPassword(plain) boolean
-    +addFriend(user User) void
-  }
+    class User {
+        +UUID id
+        +String email
+        +String password
+        +DateTime createdAt
+        +syncCalendar()
+    }
 
-  class Avatar {
-    -String id
-    -int level
-    -int currentXP
-    -int totalXP
-    -int coins
-    +gainXP(amount int) void
-    +levelUp() void
-    +getXPToNextLevel() int
-  }
+    class Avatar {
+        +int level
+        +int currentXP
+        +int coins
+        +updateProgress(xp int, coins int)
+    }
 
-  class Task {
-    -String id
-    -String title
-    -String description
-    -int xpReward
-    -DifficultyEnum difficulty
-    -Date dueDate
-    -boolean isCompleted
-    +complete() void
-    +getBonus() int
-    +clone() Task
-    +displayInfo() void
-  }
+    class ITask {
+        <<Interface>>
+        +execute()
+        +getRewards()
+    }
 
-  class Mission {
-    -int coinReward
-    -boolean isDaily
-    -Task[] tasks
-    +addTask(task Task) void
-    +complete() void
-    +getBonus() int
-    +clone() Task
-  }
+    class Habit {
+        +int streak
+        +Frequency frequency
+        +checkIn()
+    }
 
-  class Habit {
-    -int streak
-    -Date lastCheckedIn
-    -AreaEnum area
-    +checkIn() void
-    +complete() void
-    +getBonus() int
-    +clone() Task
-  }
+    class Daily {
+        +DateTime dueDate
+        +boolean isOverdue
+    }
 
-  class Achievement {
-    -String id
-    -String name
-    -String description
-    -String medal
-    -int xpReward
-    -Date unlockedAt
-    -boolean unlocked
-    +unlock() void
-    +isUnlocked() boolean
-  }
+    class SkillTree {
+        +String category
+        +List nodes
+        +unlockNode(nodeId)
+    }
 
-  class Inventory {
-    -String id
-    -Item[] items
-    -Achievement[] achievements
-    -int capacity
-    +addItem(item Item) void
-    +removeItem(id String) void
-    +addAchievement(a Achievement) void
-  }
+    class RewardStore {
+        +List availableItems
+        +processPurchase(user, item)
+    }
 
-  class Item {
-    -String id
-    -String name
-    -String description
-    -RarityEnum rarity
-    -int price
-    +purchase(avatar Avatar) boolean
-    +getDescription() String
-  }
+    class Item {
+        +String name
+        +int price
+        +Rarity rarity
+        +applyEffect(avatar)
+    }
 
-  class SkillTree {
-    -String id
-    -String name
-    -AreaEnum area
-    -String[] unlockedNodes
-    -int totalNodes
-    +unlockNode(nodeName String) void
-    +getProgress() float
-    +isCompleted() boolean
-  }
+    class Achievement {
+        +String criteria
+        +boolean isUnlocked
+        +notifyUser()
+    }
 
-  class Notification {
-    -String id
-    -String message
-    -String type
-    -String channel
-    -Date sentAt
-    -boolean sent
-    +send() void
-    +schedule(date Date) void
-  }
-
-  User "1" *-- "1" Avatar : owns
-  User "1" *-- "1" Inventory : owns
-  User "1" o-- "*" Task : creates
-  User "1" o-- "*" SkillTree : tracks
-  User "1" o-- "*" Notification : receives
-
-  Mission --|> Task : extends
-  Habit --|> Task : extends
-
-  Inventory "1" *-- "*" Item : holds
-  Inventory "1" *-- "*" Achievement : holds
-
-  Item "*" --o "1" Inventory : belongs to
+    class NotificationService {
+        +sendWhatsApp(message)
+        +pushNotification()
+    }
+    User "1" *-- "1" Avatar : possui
+    User "1" *-- "*" ITask : gerencia
+    Avatar "1" -- "*" SkillTree : progride
+    ITask <|-- Habit : implementa
+    ITask <|-- Daily : implementa
+    User "1" --> "1" RewardStore : acessa
+    RewardStore "1" o-- "*" Item : contém
+    Avatar "1" -- "*" Achievement : conquista
+    User "1" ..> NotificationService : utiliza
